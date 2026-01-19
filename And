@@ -279,9 +279,7 @@ end)
 warn("Loading Combat tab")
 
 local CombatTab = Window:MakeTab({
-	Name = "Combat",
-	Icon = nil, -- IMPORTANT: remove icon
-	PremiumOnly = false
+	Name = "Combat"
 })
 
 getgenv().InfAmmo = false
