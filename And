@@ -104,9 +104,12 @@ TeleportTab:AddDropdown({
 -- =========================
 -- COMBAT TAB (Includes ESP + Infinite Ammo + Gun Mods)
 -- =========================
+-- =========================
+-- COMBAT TAB
+-- =========================
 local CombatTab = Window:MakeTab({
-    Name = "Combat", -- Tab renamed to Combat
-    Icon = nil, -- no tab icon to prevent "failed to load"
+    Name = "Combat",
+    Icon = nil, -- Remove broken icon to prevent tab from failing
     PremiumOnly = false
 })
 
@@ -121,11 +124,9 @@ CombatTab:AddToggle({
     Default = false,
     Callback = function(v)
         getgenv().InfAmmo = v
-    end,
-    Icon = "rbxassetid://12074900861"
+    end
 })
 
--- Infinite Ammo Logic
 task.spawn(function()
     while task.wait(0.1) do
         if getgenv().InfAmmo then
@@ -139,7 +140,7 @@ task.spawn(function()
                     local mag = tool.Mag
                     if mag.Value <= 0 then
                         humanoid:UnequipTools()
-                        mag.Value = 10
+                        mag.Value = 10 -- reset mag
                     end
                 end
             end
@@ -150,11 +151,10 @@ end)
 -- =========================
 -- Gun Mods Button
 -- =========================
-local filtertable = filtergc("table",{Keys={"Recoil","SpreadY","SpreadX","FireRate","Auto"}})
-
 CombatTab:AddButton({
     Name = "Apply Gun Mods",
     Callback = function()
+        local filtertable = filtergc("table",{Keys={"Recoil","SpreadY","SpreadX","FireRate","Auto"}})
         for _,v in pairs(filtertable) do
             if v.Recoil ~= nil then
                 setreadonly(v,false)
@@ -165,8 +165,7 @@ CombatTab:AddButton({
                 v.Auto = true
             end
         end
-    end,
-    Icon = "rbxassetid://12074900861"
+    end
 })
 
 -- =========================
@@ -180,27 +179,7 @@ CombatTab:AddButton({
                 v.HoldDuration = 0
             end
         end
-    end,
-    Icon = "rbxassetid://12074900861"
-})
-
--- =========================
--- ESP Toggle (Example)
--- =========================
-getgenv().ESPEnabled = false
-CombatTab:AddToggle({
-    Name = "ESP",
-    Default = false,
-    Callback = function(v)
-        getgenv().ESPEnabled = v
-        -- Add your ESP logic here
-        if v then
-            print("ESP Enabled")
-        else
-            print("ESP Disabled")
-        end
-    end,
-    Icon = "rbxassetid://12074900861"
+    end
 })
 
 -- =========================
