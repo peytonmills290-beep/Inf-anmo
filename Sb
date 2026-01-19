@@ -1,0 +1,347 @@
+-- =========================
+-- VillainHub | South Bronx Standalone (Delta Compatible)
+-- =========================
+repeat task.wait() until game:IsLoaded()
+
+-- SERVICES
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local player = Players.LocalPlayer
+local PlayerGui = player:WaitForChild("PlayerGui")
+
+-- CHARACTER
+local char = player.Character or player.CharacterAdded:Wait()
+local hrp = char:WaitForChild("HumanoidRootPart")
+local humanoid = char:WaitForChild("Humanoid")
+
+player.CharacterAdded:Connect(function(c)
+	char = c
+	hrp = char:WaitForChild("HumanoidRootPart")
+	humanoid = char:WaitForChild("Humanoid")
+end)
+
+-- =========================
+-- TWEEN SYSTEM
+-- =========================
+local tweenInfo = TweenInfo.new(12, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
+local function tweenWithInfo(cf)
+	local tween = TweenService:Create(hrp, tweenInfo, {CFrame = cf})
+	tween:Play()
+	while tween.PlaybackState ~= Enum.PlaybackState.Completed do
+		task.wait()
+	end
+end
+
+-- Cancelable tween for Auto Farms
+local function tweenCancelable(cf, checkFunc)
+	local tween = TweenService:Create(hrp, tweenInfo, {CFrame = cf})
+	tween:Play()
+	while tween.PlaybackState ~= Enum.PlaybackState.Completed do
+		if not checkFunc() then
+			tween:Cancel()
+			return false
+		end
+		task.wait()
+	end
+	return true
+end
+
+-- =========================
+-- SOUTH BRONX LOCATIONS
+-- =========================
+local SouthBronxLocations = {
+	["Main Gun Store 🔫"] = CFrame.new(219, 6, -158),
+	["Black Market 💹"] = CFrame.new(671, 6, 251),
+	["DealerShip 🚗"] = CFrame.new(738, 6, 439),
+	["DealerShip Apartments 🌇"] = CFrame.new(717, 5, 548),
+	["Clothes Store 👕"] = CFrame.new(-197, 6, -74),
+	["Box Job Apartments 📦"] = CFrame.new(-527, 6, 142),
+	["Bank 💳"] = CFrame.new(-47, 6, -340),
+	["Fake ID Seller 🎫"] = CFrame.new(219, 6, -331),
+	["DOA Turf 🔴"] = CFrame.new(-335, 6, -415),
+	["OGZ Turf 🟣"] = CFrame.new(125, 6, -466),
+	["YGZ Turf 🟢"] = CFrame.new(3, 6, 223),
+	["Studio 🎙"] = CFrame.new(522, 6, -26),
+	["Shoe Store 👟"] = CFrame.new(525, 7, -184),
+	["Second Gun Store 🔫"] = CFrame.new(-459, 6, 328),
+	["Exclusive Gun Store 🔫"] = CFrame.new(1131, 4, 173)
+}
+
+-- =========================
+-- ORION GUI
+-- =========================
+local OrionLib = loadstring(game:HttpGet(
+	"https://raw.githubusercontent.com/jensonhirst/Orion/main/source"
+))()
+
+local Window = OrionLib:MakeWindow({
+	Name = "VillainHub | South Bronx",
+	SaveConfig = true,
+	ConfigFolder = "VillainHub_SB"
+})
+
+-- =========================
+-- TELEPORT TAB
+-- =========================
+local TeleportTab = Window:MakeTab({Name="Teleport", Icon="rbxassetid://4483345998"})
+local options = {"None"}
+for name,_ in pairs(SouthBronxLocations) do table.insert(options,name) end
+
+TeleportTab:AddDropdown({
+	Name="Teleport",
+	Default="None",
+	Options=options,
+	Callback=function(v)
+		if v ~= "None" then
+			tweenWithInfo(SouthBronxLocations[v])
+		end
+	end
+})
+
+-- =========================
+-- ESP TAB
+-- =========================
+local ESPTab = Window:MakeTab({Name="ESP", Icon="rbxassetid://4483345998"})
+local ESPEnabled = false
+local ESPBoxes = {}
+
+ESPTab:AddToggle({
+	Name="Enable ESP",
+	Default=false,
+	Callback=function(v)
+		ESPEnabled = v
+	end
+})
+
+RunService.RenderStepped:Connect(function()
+	for _,plr in pairs(Players:GetPlayers()) do
+		if plr ~= player and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+			local hrpT = plr.Character.HumanoidRootPart
+			if ESPEnabled then
+				if not ESPBoxes[plr] then
+					local box = Drawing.new("Square")
+					box.Thickness = 2
+					box.Filled = false
+					box.Color = Color3.fromRGB(255,0,0)
+					ESPBoxes[plr] = box
+				end
+				local pos, onscreen = workspace.CurrentCamera:WorldToViewportPoint(hrpT.Position)
+				if onscreen then
+					ESPBoxes[plr].Size = Vector2.new(35,35)
+					ESPBoxes[plr].Position = Vector2.new(pos.X-18,pos.Y-18)
+					ESPBoxes[plr].Visible = true
+				else
+					ESPBoxes[plr].Visible = false
+				end
+			elseif ESPBoxes[plr] then
+				ESPBoxes[plr]:Remove()
+				ESPBoxes[plr] = nil
+			end
+		end
+	end
+end)
+
+-- =========================
+-- AUTO FARM TAB
+-- =========================
+local AutofarmTab = Window:MakeTab({Name="Auto Farm", Icon="rbxassetid://12074900861"})
+
+-- BOX AUTOFARM
+getgenv().BoxFarm = false
+AutofarmTab:AddToggle({
+	Name="Box Autofarm",
+	Default=false,
+	Callback=function(v)
+		getgenv().BoxFarm = v
+	end
+})
+
+local boxStart = CFrame.new(-552.0956,3.53,-84.45)
+local boxTarget = CFrame.new(-401.14,3.36,-70.97)
+local boxProx1 = workspace.PlaceHere.Attachment.ProximityPrompt
+local boxProx2 = workspace.cratetruck2.Model.ClickBox.Attachment.ProximityPrompt
+boxProx1.HoldDuration = 0
+boxProx2.HoldDuration = 0
+
+local function equipCrate()
+	local bp = player.Backpack
+	if bp:FindFirstChild("Crate") then
+		bp.Crate.Parent = char
+		task.wait(0.1)
+		return true
+	end
+	return false
+end
+
+task.spawn(function()
+	while true do
+		if getgenv().BoxFarm then
+			if not tweenCancelable(boxStart,function() return getgenv().BoxFarm end) then continue end
+			if not getgenv().BoxFarm then continue end
+			fireproximityprompt(boxProx1,0)
+
+			if not tweenCancelable(boxTarget,function() return getgenv().BoxFarm end) then continue end
+			if not getgenv().BoxFarm then continue end
+			if equipCrate() then
+				fireproximityprompt(boxProx2,0)
+			end
+		end
+		task.wait(0.1)
+	end
+end)
+
+-- MARSH FARM
+getgenv().MarshFarm = false
+AutofarmTab:AddToggle({
+	Name="Marsh Farm",
+	Default=false,
+	Callback=function(v)
+		getgenv().MarshFarm = v
+	end
+})
+
+local BuyProductsCF = CFrame.new(510.7778,3.5872,599.1857)
+local BuyHouseCF = CFrame.new(1108.2331,10.7941,451.8186)
+local CookPotCF = CFrame.new(1142.4928,10.1050,452.5984)
+
+local StoreRemote = ReplicatedStorage.RemoteEvents.StorePurchase
+local HousePrompt = workspace.Map.APTS.WH1.Board.backboard.ProximityPrompt
+local CookPrompt = workspace.Map.Houses.WH1.Interior["Cooking Pot"].Attachment.ProximityPrompt
+local SellPrompt = workspace.Folders.NPCs["Lamont Bell"].UpperTorso.ProximityPrompt
+
+HousePrompt.HoldDuration = 0
+CookPrompt.HoldDuration = 0
+SellPrompt.HoldDuration = 0
+
+local function EquipItem(name) 
+	local bp = player.Backpack
+	local item = bp:FindFirstChild(name) or char:FindFirstChild(name)
+	if item then
+		item.Parent = char
+		task.wait(0.1)
+		return true
+	end
+	return false
+end
+
+local function EquipMarshBag()
+	local bp = player.Backpack
+	local bag = bp:FindFirstChild("Small Marshmallow Bag") 
+			or bp:FindFirstChild("Medium Marshmallow Bag") 
+			or bp:FindFirstChild("Large Marshmallow Bag")
+	if bag then
+		bag.Parent = char
+		return true
+	end
+	return false
+end
+
+task.spawn(function()
+	while true do
+		if getgenv().MarshFarm then
+			-- Buy products in order: Water → Sugar Block → Gelatin
+			if not tweenCancelable(BuyProductsCF,function() return getgenv().MarshFarm end) then continue end
+			for _,item in ipairs({"Water","Sugar Block Bag","Gelatin"}) do
+				StoreRemote:FireServer(item)
+				local timer=0
+				while not player.Backpack:FindFirstChild(item) and timer<1 do
+					task.wait(0.1)
+					timer=timer+0.1
+				end
+			end
+
+			-- Buy house
+			if not tweenCancelable(BuyHouseCF,function() return getgenv().MarshFarm end) then continue end
+			task.wait(0.2)
+			fireproximityprompt(HousePrompt,0)
+
+			-- Cooking
+			if not tweenCancelable(CookPotCF,function() return getgenv().MarshFarm end) then continue end
+			if EquipItem("Water") then fireproximityprompt(CookPrompt,0) task.wait(20) end
+			if EquipItem("Sugar Block Bag") then fireproximityprompt(CookPrompt,0) end
+			if EquipItem("Gelatin") then fireproximityprompt(CookPrompt,0) task.wait(61) end
+			if EquipItem("Empty Bag") then fireproximityprompt(CookPrompt,0) end
+
+			-- Sell marshmallow
+			if not tweenCancelable(BuyProductsCF,function() return getgenv().MarshFarm end) then continue end
+			if EquipMarshBag() then fireproximityprompt(SellPrompt,0) end
+		end
+		task.wait(0.1)
+	end
+end)
+
+-- =========================
+-- COMBAT TAB (UNCHANGED GUI, updated recoil)
+-- =========================
+local CombatTab = Window:MakeTab({Name="Combat", Icon="rbxassetid://4483345998"})
+
+getgenv().InfAmmo = false
+
+CombatTab:AddToggle({
+    Name = "Infinite Ammo",
+    Default = false,
+    Callback = function(v)
+        getgenv().InfAmmo = v
+    end
+})
+
+task.spawn(function()
+    local player = game.Players.LocalPlayer
+
+    while task.wait(0.1) do
+        if getgenv().InfAmmo then
+            local char = player.Character
+            if not char then continue end
+
+            local humanoid = char:FindFirstChildOfClass("Humanoid")
+            if not humanoid then continue end
+
+            for _, tool in ipairs(player.Backpack:GetChildren()) do
+                if tool:IsA("Tool") and tool:FindFirstChild("Setting") and tool:FindFirstChild("Mag") then
+                    local mag = tool.Mag
+
+                    if mag.Value <= 0 then
+                        humanoid:UnequipTools()
+                        mag.Value = 10 -- change if needed
+                    end
+                end
+            end
+        end
+    end
+end)
+
+-- Recoil/Spread/FireRate/Auto modification
+local filtertable = filtergc("table",{Keys={"Recoil","SpreadY","SpreadX","FireRate","Auto"}})
+
+CombatTab:AddButton({
+	Name="Apply Gun Mods",
+	Callback=function()
+		for _,v in pairs(filtertable) do
+			if v.Recoil ~= nil then
+				setreadonly(v,false)
+				v.Recoil=0
+				v.SpreadY=0
+				v.SpreadX=0
+				v.FireRate=0
+				v.Auto=true
+			end
+		end
+	end
+})
+
+CombatTab:AddButton({
+	Name="Instant Interact",
+	Callback=function()
+		for _,v in pairs(workspace:GetDescendants()) do
+			if v:IsA("ProximityPrompt") then
+				v.HoldDuration=0
+			end
+		end
+	end
+})
+
+-- =========================
+OrionLib:Init()
