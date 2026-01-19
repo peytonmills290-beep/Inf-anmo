@@ -102,47 +102,106 @@ TeleportTab:AddDropdown({
 })
 
 -- =========================
--- ESP TAB
+-- COMBAT TAB (Includes ESP + Infinite Ammo + Gun Mods)
 -- =========================
-local ESPTab = Window:MakeTab({Name="ESP", Icon="rbxassetid://4483345998"})
-local ESPEnabled = false
-local ESPBoxes = {}
-
-ESPTab:AddToggle({
-	Name="Enable ESP",
-	Default=false,
-	Callback=function(v)
-		ESPEnabled = v
-	end
+local CombatTab = Window:MakeTab({
+    Name = "Combat", -- Tab renamed to Combat
+    Icon = nil, -- no tab icon to prevent "failed to load"
+    PremiumOnly = false
 })
 
-RunService.RenderStepped:Connect(function()
-	for _,plr in pairs(Players:GetPlayers()) do
-		if plr ~= player and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
-			local hrpT = plr.Character.HumanoidRootPart
-			if ESPEnabled then
-				if not ESPBoxes[plr] then
-					local box = Drawing.new("Square")
-					box.Thickness = 2
-					box.Filled = false
-					box.Color = Color3.fromRGB(255,0,0)
-					ESPBoxes[plr] = box
-				end
-				local pos, onscreen = workspace.CurrentCamera:WorldToViewportPoint(hrpT.Position)
-				if onscreen then
-					ESPBoxes[plr].Size = Vector2.new(35,35)
-					ESPBoxes[plr].Position = Vector2.new(pos.X-18,pos.Y-18)
-					ESPBoxes[plr].Visible = true
-				else
-					ESPBoxes[plr].Visible = false
-				end
-			elseif ESPBoxes[plr] then
-				ESPBoxes[plr]:Remove()
-				ESPBoxes[plr] = nil
-			end
-		end
-	end
+local player = game.Players.LocalPlayer
+
+-- =========================
+-- Infinite Ammo Toggle
+-- =========================
+getgenv().InfAmmo = false
+CombatTab:AddToggle({
+    Name = "Infinite Ammo",
+    Default = false,
+    Callback = function(v)
+        getgenv().InfAmmo = v
+    end,
+    Icon = "rbxassetid://12074900861"
+})
+
+-- Infinite Ammo Logic
+task.spawn(function()
+    while task.wait(0.1) do
+        if getgenv().InfAmmo then
+            local char = player.Character
+            if not char then continue end
+            local humanoid = char:FindFirstChildOfClass("Humanoid")
+            if not humanoid then continue end
+
+            for _, tool in ipairs(player.Backpack:GetChildren()) do
+                if tool:IsA("Tool") and tool:FindFirstChild("Setting") and tool:FindFirstChild("Mag") then
+                    local mag = tool.Mag
+                    if mag.Value <= 0 then
+                        humanoid:UnequipTools()
+                        mag.Value = 10
+                    end
+                end
+            end
+        end
+    end
 end)
+
+-- =========================
+-- Gun Mods Button
+-- =========================
+local filtertable = filtergc("table",{Keys={"Recoil","SpreadY","SpreadX","FireRate","Auto"}})
+
+CombatTab:AddButton({
+    Name = "Apply Gun Mods",
+    Callback = function()
+        for _,v in pairs(filtertable) do
+            if v.Recoil ~= nil then
+                setreadonly(v,false)
+                v.Recoil = 0
+                v.SpreadY = 0
+                v.SpreadX = 0
+                v.FireRate = 0
+                v.Auto = true
+            end
+        end
+    end,
+    Icon = "rbxassetid://12074900861"
+})
+
+-- =========================
+-- Instant Interact Button
+-- =========================
+CombatTab:AddButton({
+    Name = "Instant Interact",
+    Callback = function()
+        for _,v in pairs(workspace:GetDescendants()) do
+            if v:IsA("ProximityPrompt") then
+                v.HoldDuration = 0
+            end
+        end
+    end,
+    Icon = "rbxassetid://12074900861"
+})
+
+-- =========================
+-- ESP Toggle (Example)
+-- =========================
+getgenv().ESPEnabled = false
+CombatTab:AddToggle({
+    Name = "ESP",
+    Default = false,
+    Callback = function(v)
+        getgenv().ESPEnabled = v
+        -- Add your ESP logic here
+        if v then
+            print("ESP Enabled")
+        else
+            print("ESP Disabled")
+        end
+    end,
+    Icon = "rbxassetid://12074900861"
+})
 
 -- =========================
 -- AUTO FARM TAB
@@ -272,91 +331,6 @@ task.spawn(function()
 		task.wait(0.1)
 	end
 end)
-
--- =========================
--- COMBAT TAB (UNCHANGED GUI, updated recoil)
--- =========================
-warn("Loading Combat tab")
-
--- =========================
--- COMBAT TAB (Delta-compatible, updated recoil)
--- =========================
-local CombatTab = Window:MakeTab({
-    Name = "Combat",
-    Icon = nil, -- remove tab icon to prevent "failed to load" error
-    PremiumOnly = false
-})
-
-local player = game.Players.LocalPlayer
-
--- Infinite Ammo Toggle
-getgenv().InfAmmo = false
-CombatTab:AddToggle({
-    Name = "Infinite Ammo",
-    Default = false,
-    Callback = function(v)
-        getgenv().InfAmmo = v
-    end,
-    Icon = "rbxassetid://12074900861" -- icon on toggle instead of tab
-})
-
--- Infinite Ammo Logic
-task.spawn(function()
-    while task.wait(0.1) do
-        if getgenv().InfAmmo then
-            local char = player.Character
-            if not char then continue end
-            local humanoid = char:FindFirstChildOfClass("Humanoid")
-            if not humanoid then continue end
-
-            for _, tool in ipairs(player.Backpack:GetChildren()) do
-                if tool:IsA("Tool") and tool:FindFirstChild("Setting") and tool:FindFirstChild("Mag") then
-                    local mag = tool.Mag
-                    if mag.Value <= 0 then
-                        humanoid:UnequipTools()
-                        mag.Value = 10 -- change ammo amount if needed
-                    end
-                end
-            end
-        end
-    end
-end)
-
--- Recoil/Spread/FireRate/Auto modification
-local filtertable = filtergc("table",{Keys={"Recoil","SpreadY","SpreadX","FireRate","Auto"}})
-
--- Apply Gun Mods Button
-CombatTab:AddButton({
-    Name = "Apply Gun Mods",
-    Callback = function()
-        for _,v in pairs(filtertable) do
-            if v.Recoil ~= nil then
-                setreadonly(v,false)
-                v.Recoil = 0
-                v.SpreadY = 0
-                v.SpreadX = 0
-                v.FireRate = 0
-                v.Auto = true
-            end
-        end
-    end,
-    Icon = "rbxassetid://12074900861"
-})
-
--- Instant Interact Button
-CombatTab:AddButton({
-    Name = "Instant Interact",
-    Callback = function()
-        for _,v in pairs(workspace:GetDescendants()) do
-            if v:IsA("ProximityPrompt") then
-                v.HoldDuration = 0
-            end
-        end
-    end,
-    Icon = "rbxassetid://12074900861"
-})
-
-
 
 
 -- =========================
