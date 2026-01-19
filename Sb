@@ -276,10 +276,12 @@ end)
 -- =========================
 -- COMBAT TAB (UNCHANGED GUI, updated recoil)
 -- =========================
+warn("Loading Combat tab")
+
 local CombatTab = Window:MakeTab({
-	Name = "Combat",
-	Icon = "rbxassetid://4483345998",
-	PremiumOnly = false
+    Name = "Combat",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
 })
 
 getgenv().InfAmmo = false
@@ -294,22 +296,18 @@ CombatTab:AddToggle({
 
 task.spawn(function()
     local player = game.Players.LocalPlayer
-
-    while task.wait(0.1) do
+    while task.wait(0.15) do
         if getgenv().InfAmmo then
             local char = player.Character
             if not char then continue end
-
             local humanoid = char:FindFirstChildOfClass("Humanoid")
             if not humanoid then continue end
 
             for _, tool in ipairs(player.Backpack:GetChildren()) do
                 if tool:IsA("Tool") and tool:FindFirstChild("Setting") and tool:FindFirstChild("Mag") then
-                    local mag = tool.Mag
-
-                    if mag.Value <= 0 then
+                    if tool.Mag.Value <= 0 then
                         humanoid:UnequipTools()
-                        mag.Value = 10 -- change if needed
+                        tool.Mag.Value = 10
                     end
                 end
             end
@@ -317,34 +315,38 @@ task.spawn(function()
     end
 end)
 
--- Recoil/Spread/FireRate/Auto modification
-local filtertable = filtergc("table",{Keys={"Recoil","SpreadY","SpreadX","FireRate","Auto"}})
+local filtertable = {}
+pcall(function()
+    filtertable = filtergc("table", {
+        Keys = {"Recoil","SpreadY","SpreadX","FireRate","Auto"}
+    })
+end)
 
 CombatTab:AddButton({
-	Name="Apply Gun Mods",
-	Callback=function()
-		for _,v in pairs(filtertable) do
-			if v.Recoil ~= nil then
-				setreadonly(v,false)
-				v.Recoil=0
-				v.SpreadY=0
-				v.SpreadX=0
-				v.FireRate=0
-				v.Auto=true
-			end
-		end
-	end
+    Name = "Apply Gun Mods",
+    Callback = function()
+        for _, v in pairs(filtertable) do
+            if v.Recoil ~= nil then
+                setreadonly(v,false)
+                v.Recoil = 0
+                v.SpreadY = 0
+                v.SpreadX = 0
+                v.FireRate = 0
+                v.Auto = true
+            end
+        end
+    end
 })
 
 CombatTab:AddButton({
-	Name="Instant Interact",
-	Callback=function()
-		for _,v in pairs(workspace:GetDescendants()) do
-			if v:IsA("ProximityPrompt") then
-				v.HoldDuration=0
-			end
-		end
-	end
+    Name = "Instant Interact",
+    Callback = function()
+        for _, v in pairs(workspace:GetDescendants()) do
+            if v:IsA("ProximityPrompt") then
+                v.HoldDuration = 0
+            end
+        end
+    end
 })
 
 -- =========================
