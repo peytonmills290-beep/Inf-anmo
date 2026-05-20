@@ -1,4 +1,4 @@
-if getgenv().valary_loaded then
+if getgenv().villain_loaded then
     return
 end
 
@@ -61,8 +61,8 @@ if LPH_OBFUSCATED == nil then
         while true do end
     end
     LRM_IsUserPremium = false
-    LRM_LinkedDiscordID = "1096603799159832636"
-    LRM_ScriptName = "valary"
+    LRM_LinkedDiscordID = "1399605906970509432"
+    LRM_ScriptName = "Villain"
     LRM_TotalExecutions = 0
     LRM_SecondsLeft = math.huge
     LRM_UserNote = "Developer";
